@@ -37,7 +37,6 @@ export interface TimerLabels {
   start: string;
   pauseTimer: string;
   resume: string;
-  reset: string;
   done: string;
   redo: string;
   close: string;
@@ -49,7 +48,36 @@ export interface TimerLabels {
   presetSaved: string;
   presetDeleted: string;
   countdown: string;
+  tryTimer: string;
+  back: string;
 }
+
+export const DEFAULT_LABELS: TimerLabels = {
+  work: "Active",
+  rest: "Rest",
+  rounds: "Rounds",
+  round: "Round",
+  sets: "Sets",
+  set: "Set",
+  pause: "Rest between sets",
+  pausePhase: "Pause",
+  start: "Start",
+  pauseTimer: "Pause",
+  resume: "Resume",
+  done: "Done",
+  redo: "Redo",
+  close: "Close",
+  savePreset: "Save preset",
+  presetName: "Preset name",
+  myPresets: "My presets",
+  coachPresets: "Coach presets",
+  deletePreset: "Delete preset",
+  presetSaved: "Preset saved!",
+  presetDeleted: "Preset deleted",
+  countdown: "Get ready",
+  tryTimer: "Start",
+  back: "Back",
+};
 
 export interface TimerCallbacks {
   onBeep?: (type: BeepType) => void;

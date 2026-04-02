@@ -153,8 +153,77 @@ function Stepper({ label, value, onChange, min, max, step, unit, formatValue }) 
   ] });
 }
 
+// src/audio.ts
+var ctx = null;
+function getContext() {
+  if (!ctx) ctx = new AudioContext();
+  return ctx;
+}
+function playBeep(frequency, durationMs) {
+  try {
+    const ac = getContext();
+    if (ac.state === "suspended") ac.resume();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.frequency.value = frequency;
+    osc.type = "sine";
+    gain.gain.value = 0.3;
+    osc.connect(gain);
+    gain.connect(ac.destination);
+    osc.start();
+    osc.stop(ac.currentTime + durationMs / 1e3);
+  } catch {
+  }
+}
+function defaultBeep(type) {
+  switch (type) {
+    case "work":
+      playBeep(880, 200);
+      break;
+    case "rest":
+      playBeep(440, 300);
+      break;
+    case "go":
+      playBeep(1760, 300);
+      break;
+    case "done":
+      playBeep(880, 150);
+      setTimeout(() => playBeep(880, 150), 200);
+      setTimeout(() => playBeep(1100, 300), 400);
+      break;
+  }
+}
+
+// src/types.ts
+var DEFAULT_LABELS = {
+  work: "Active",
+  rest: "Rest",
+  rounds: "Rounds",
+  round: "Round",
+  sets: "Sets",
+  set: "Set",
+  pause: "Rest between sets",
+  pausePhase: "Pause",
+  start: "Start",
+  pauseTimer: "Pause",
+  resume: "Resume",
+  done: "Done",
+  redo: "Redo",
+  close: "Close",
+  savePreset: "Save preset",
+  presetName: "Preset name",
+  myPresets: "My presets",
+  coachPresets: "Coach presets",
+  deletePreset: "Delete preset",
+  presetSaved: "Preset saved!",
+  presetDeleted: "Preset deleted",
+  countdown: "Get ready",
+  tryTimer: "Start",
+  back: "Back"
+};
+
 // src/IntervalTimer.tsx
-import { jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
+import { Fragment, jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
 var RING_SIZE = 200;
 var OUTER_STROKE = 6;
 var INNER_STROKE = 8;
@@ -172,9 +241,9 @@ var IconPause = () => /* @__PURE__ */ jsxs2("svg", { className: "h-4 w-4", viewB
   /* @__PURE__ */ jsx2("rect", { x: "6", y: "4", width: "4", height: "16" }),
   /* @__PURE__ */ jsx2("rect", { x: "14", y: "4", width: "4", height: "16" })
 ] });
-var IconReset = () => /* @__PURE__ */ jsxs2("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-  /* @__PURE__ */ jsx2("path", { d: "M1 4v6h6" }),
-  /* @__PURE__ */ jsx2("path", { d: "M3.51 15a9 9 0 1 0 2.13-9.36L1 10" })
+var IconBack = () => /* @__PURE__ */ jsxs2("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+  /* @__PURE__ */ jsx2("path", { d: "m12 19-7-7 7-7" }),
+  /* @__PURE__ */ jsx2("path", { d: "M19 12H5" })
 ] });
 var IconBookmark = () => /* @__PURE__ */ jsx2("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsx2("path", { d: "m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" }) });
 var IconTrash = () => /* @__PURE__ */ jsxs2("svg", { className: "h-3 w-3", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
@@ -184,7 +253,7 @@ var IconTrash = () => /* @__PURE__ */ jsxs2("svg", { className: "h-3 w-3", viewB
 ] });
 function IntervalTimer({
   config,
-  labels: t,
+  labels: labelOverrides,
   userId,
   onBeep,
   onClose,
@@ -195,6 +264,8 @@ function IntervalTimer({
   onScheduleNotifications,
   onCancelNotifications
 }) {
+  const t = { ...DEFAULT_LABELS, ...labelOverrides };
+  const beep = onBeep ?? defaultBeep;
   const [work, setWork] = useState2(config?.work ?? 7);
   const [rest, setRest] = useState2(config?.rest ?? 3);
   const [rounds, setRounds] = useState2(config?.rounds ?? 6);
@@ -203,9 +274,7 @@ function IntervalTimer({
   const [countdownDuration, setCountdownDuration] = useState2(config?.countdown ?? 5);
   const [presets, setPresets] = useState2([]);
   const [savingPreset, setSavingPreset] = useState2(false);
-  const [showSaveInput, setShowSaveInput] = useState2(false);
   const [presetName, setPresetName] = useState2("");
-  const saveInputRef = useRef3(null);
   const fetchPresets = useCallback2(async () => {
     if (!onFetchPresets) return;
     try {
@@ -222,11 +291,16 @@ function IntervalTimer({
     if (!name || !onSavePreset) return;
     setSavingPreset(true);
     try {
-      const ok = await onSavePreset(name, { work, rest, rounds, sets, pause: pauseDuration, countdown: countdownDuration });
+      const config2 = { work, rest, rounds, sets, pause: pauseDuration, countdown: countdownDuration };
+      const ok = await onSavePreset(name, config2);
       if (ok) {
-        setShowSaveInput(false);
         setPresetName("");
-        fetchPresets();
+        if (onSaveConfig) {
+          onSaveConfig(config2);
+        } else {
+          fetchPresets();
+          start();
+        }
       }
     } catch {
     }
@@ -288,14 +362,16 @@ function IntervalTimer({
       setTotalProgress(1);
       setCurrentRound(rounds);
       setCurrentSet(sets);
-      onBeep?.("done");
+      beep("done");
       return;
     }
     const phaseKey = `${result.set}-${result.round}-${result.phase}`;
     if (lastPhaseRef.current && lastPhaseRef.current !== phaseKey) {
-      onBeep?.(result.phase === "work" ? "work" : "rest");
+      beep(result.phase === "work" ? "work" : "rest");
       setInnerTransition(false);
-      setTimeout(() => setInnerTransition(true), 0);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setInnerTransition(true));
+      });
     }
     lastPhaseRef.current = phaseKey;
     setPhase(result.phase);
@@ -304,7 +380,7 @@ function IntervalTimer({
     setDisplayTime(Math.ceil(result.remaining / 1e3));
     setProgress(result.progress);
     setTotalProgress(result.totalProgress);
-  }, [workMs, restMs, rounds, pauseMs, sets, onBeep]);
+  }, [workMs, restMs, rounds, pauseMs, sets, beep]);
   const startRunning = useCallback2(() => {
     startedAtRef.current = Date.now();
     pausedElapsedRef.current = 0;
@@ -316,7 +392,7 @@ function IntervalTimer({
     setCurrentSet(1);
     setProgress(0);
     setTotalProgress(0);
-    onBeep?.("work");
+    beep("work");
     onScheduleNotifications?.(getNotifSchedule(), 0);
     intervalRef.current = setInterval(tick, 50);
   }, [tick, work, onBeep, onScheduleNotifications, getNotifSchedule]);
@@ -328,13 +404,13 @@ function IntervalTimer({
     setPhase("work");
     setProgress(0);
     setTotalProgress(0);
-    onBeep?.("work");
+    beep("work");
     let count = countdownDuration;
     countdownRef.current = setInterval(() => {
       count -= 1;
       if (count > 0) {
         setCountdownValue(count);
-        onBeep?.(count === 1 ? "go" : "work");
+        beep(count === 1 ? "go" : "work");
       } else {
         clearInterval(countdownRef.current);
         startRunning();
@@ -399,7 +475,7 @@ function IntervalTimer({
   if (state === "idle") {
     const myPresets = presets.filter((p) => p.owner_id === userId);
     const coachPresets = presets.filter((p) => p.owner_id !== userId);
-    return /* @__PURE__ */ jsxs2("div", { className: "flex flex-col gap-5", children: [
+    return /* @__PURE__ */ jsxs2("div", { className: "flex flex-col gap-3", children: [
       presets.length > 0 && /* @__PURE__ */ jsxs2("div", { className: "space-y-2 max-h-40 overflow-y-auto", children: [
         myPresets.length > 0 && /* @__PURE__ */ jsxs2("div", { children: [
           /* @__PURE__ */ jsx2("p", { className: "text-xs font-medium text-muted-foreground mb-1", children: t.myPresets }),
@@ -444,7 +520,7 @@ function IntervalTimer({
           )) })
         ] })
       ] }),
-      /* @__PURE__ */ jsxs2("div", { className: "space-y-4", children: [
+      /* @__PURE__ */ jsxs2("div", { className: "space-y-4 mb-2", children: [
         /* @__PURE__ */ jsx2(Stepper, { label: t.work, value: work, onChange: setWork, min: 1, max: 600, step: 1, unit: "s" }),
         /* @__PURE__ */ jsx2(Stepper, { label: t.rest, value: rest, onChange: setRest, min: 0, max: 600, step: 1, unit: "s" }),
         /* @__PURE__ */ jsx2(Stepper, { label: t.rounds, value: rounds, onChange: setRounds, min: 1, max: 99, step: 1, unit: "" }),
@@ -452,46 +528,47 @@ function IntervalTimer({
         sets > 1 && /* @__PURE__ */ jsx2(Stepper, { label: t.pause, value: pauseDuration, onChange: setPauseDuration, min: 0, max: 1800, step: 15, unit: "", formatValue: formatMMSS }),
         /* @__PURE__ */ jsx2(Stepper, { label: t.countdown, value: countdownDuration, onChange: setCountdownDuration, min: 3, max: 60, step: 1, unit: "s" })
       ] }),
-      showSaveInput && onSavePreset && /* @__PURE__ */ jsxs2("div", { className: "flex gap-2", children: [
+      onSavePreset && /* @__PURE__ */ jsxs2("div", { className: "flex gap-2", children: [
         /* @__PURE__ */ jsx2(
           "input",
           {
-            ref: saveInputRef,
             type: "text",
             className: "flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring",
             placeholder: t.presetName,
             value: presetName,
             onChange: (e) => setPresetName(e.target.value),
             onKeyDown: (e) => {
-              if (e.key === "Enter") savePreset();
+              if (e.key === "Enter" && presetName.trim()) savePreset();
             }
           }
         ),
-        /* @__PURE__ */ jsx2("button", { className: btnPrimary, disabled: !presetName.trim() || savingPreset, onClick: savePreset, children: savingPreset ? "..." : t.savePreset })
+        /* @__PURE__ */ jsxs2("button", { className: btnOutline, disabled: !presetName.trim() || savingPreset, onClick: savePreset, children: [
+          /* @__PURE__ */ jsx2(IconBookmark, {}),
+          savingPreset ? "..." : t.savePreset
+        ] })
       ] }),
-      /* @__PURE__ */ jsxs2("div", { className: "flex gap-2", children: [
-        onSavePreset && /* @__PURE__ */ jsx2(
+      /* @__PURE__ */ jsx2("div", { className: "flex items-center gap-2", children: onSaveConfig ? /* @__PURE__ */ jsxs2(Fragment, { children: [
+        /* @__PURE__ */ jsx2(
           "button",
           {
-            className: btnIcon,
-            onClick: () => {
-              setShowSaveInput((v) => !v);
-              if (!showSaveInput) setTimeout(() => saveInputRef.current?.focus(), 0);
-            },
-            children: /* @__PURE__ */ jsx2(IconBookmark, {})
+            type: "button",
+            className: "text-sm text-muted-foreground hover:text-foreground transition-colors",
+            onClick: start,
+            children: t.tryTimer
           }
         ),
-        onSaveConfig ? /* @__PURE__ */ jsx2("button", { className: `${btnPrimary} flex-1`, onClick: () => onSaveConfig({ work, rest, rounds, sets, pause: pauseDuration, countdown: countdownDuration }), children: t.done }) : /* @__PURE__ */ jsxs2("button", { className: `${btnPrimary} flex-1`, onClick: start, children: [
-          /* @__PURE__ */ jsx2(IconPlay, {}),
-          t.start
-        ] })
-      ] })
+        /* @__PURE__ */ jsx2("div", { className: "flex-1" }),
+        /* @__PURE__ */ jsx2("button", { className: btnPrimary, onClick: () => onSaveConfig({ work, rest, rounds, sets, pause: pauseDuration, countdown: countdownDuration }), children: t.done })
+      ] }) : /* @__PURE__ */ jsxs2("button", { className: `${btnPrimary} flex-1`, onClick: start, children: [
+        /* @__PURE__ */ jsx2(IconPlay, {}),
+        t.start
+      ] }) })
     ] });
   }
   if (state === "countdown") {
-    return /* @__PURE__ */ jsxs2("div", { className: "flex flex-col items-center gap-5", children: [
+    return /* @__PURE__ */ jsxs2("div", { className: "flex flex-col items-center gap-8", children: [
       /* @__PURE__ */ jsxs2("div", { className: "relative flex items-center justify-center", style: { width: RING_SIZE, height: RING_SIZE }, children: [
-        /* @__PURE__ */ jsxs2("svg", { width: RING_SIZE, height: RING_SIZE, className: "-rotate-90", children: [
+        /* @__PURE__ */ jsxs2("svg", { width: RING_SIZE, height: RING_SIZE, style: { transform: "rotate(-90deg)" }, children: [
           /* @__PURE__ */ jsx2("circle", { cx: RING_SIZE / 2, cy: RING_SIZE / 2, r: OUTER_RADIUS, fill: "none", stroke: COLOR_OVERALL, strokeWidth: OUTER_STROKE, opacity: 0.15 }),
           /* @__PURE__ */ jsx2("circle", { cx: RING_SIZE / 2, cy: RING_SIZE / 2, r: INNER_RADIUS, fill: "none", stroke: COLOR_ACTIVE, strokeWidth: INNER_STROKE, opacity: 0.15 })
         ] }),
@@ -501,15 +578,15 @@ function IntervalTimer({
         ] })
       ] }),
       /* @__PURE__ */ jsx2("div", { className: "flex gap-3 w-full", children: /* @__PURE__ */ jsxs2("button", { className: `${btnOutline} flex-1`, onClick: reset, children: [
-        /* @__PURE__ */ jsx2(IconReset, {}),
-        t.reset
+        /* @__PURE__ */ jsx2(IconBack, {}),
+        t.back
       ] }) })
     ] });
   }
   if (state === "done") {
-    return /* @__PURE__ */ jsxs2("div", { className: "flex flex-col items-center gap-6", children: [
+    return /* @__PURE__ */ jsxs2("div", { className: "flex flex-col items-center gap-8", children: [
       /* @__PURE__ */ jsxs2("div", { className: "relative flex items-center justify-center", style: { width: RING_SIZE, height: RING_SIZE }, children: [
-        /* @__PURE__ */ jsxs2("svg", { width: RING_SIZE, height: RING_SIZE, className: "-rotate-90", children: [
+        /* @__PURE__ */ jsxs2("svg", { width: RING_SIZE, height: RING_SIZE, style: { transform: "rotate(-90deg)" }, children: [
           /* @__PURE__ */ jsx2("circle", { cx: RING_SIZE / 2, cy: RING_SIZE / 2, r: OUTER_RADIUS, fill: "none", stroke: COLOR_OVERALL, strokeWidth: OUTER_STROKE }),
           /* @__PURE__ */ jsx2("circle", { cx: RING_SIZE / 2, cy: RING_SIZE / 2, r: INNER_RADIUS, fill: "none", stroke: COLOR_OVERALL, strokeWidth: INNER_STROKE })
         ] }),
@@ -517,8 +594,8 @@ function IntervalTimer({
       ] }),
       /* @__PURE__ */ jsxs2("div", { className: "flex gap-3 w-full", children: [
         /* @__PURE__ */ jsxs2("button", { className: `${btnOutline} flex-1`, onClick: reset, children: [
-          /* @__PURE__ */ jsx2(IconReset, {}),
-          t.reset
+          /* @__PURE__ */ jsx2(IconBack, {}),
+          t.back
         ] }),
         /* @__PURE__ */ jsxs2("button", { className: `${btnOutline} flex-1`, onClick: start, children: [
           /* @__PURE__ */ jsx2(IconPlay, {}),
@@ -528,9 +605,9 @@ function IntervalTimer({
       ] })
     ] });
   }
-  return /* @__PURE__ */ jsxs2("div", { className: "flex flex-col items-center gap-5", children: [
+  return /* @__PURE__ */ jsxs2("div", { className: "flex flex-col items-center gap-8", children: [
     /* @__PURE__ */ jsxs2("div", { className: "relative flex items-center justify-center", style: { width: RING_SIZE, height: RING_SIZE }, children: [
-      /* @__PURE__ */ jsxs2("svg", { width: RING_SIZE, height: RING_SIZE, className: "-rotate-90", children: [
+      /* @__PURE__ */ jsxs2("svg", { width: RING_SIZE, height: RING_SIZE, style: { transform: "rotate(-90deg)" }, children: [
         /* @__PURE__ */ jsx2("circle", { cx: RING_SIZE / 2, cy: RING_SIZE / 2, r: OUTER_RADIUS, fill: "none", stroke: COLOR_OVERALL, strokeWidth: OUTER_STROKE, opacity: 0.15 }),
         /* @__PURE__ */ jsx2(
           "circle",
@@ -579,8 +656,8 @@ function IntervalTimer({
     ] }),
     /* @__PURE__ */ jsxs2("div", { className: "flex gap-3 w-full", children: [
       /* @__PURE__ */ jsxs2("button", { className: `${btnOutline} flex-1`, onClick: reset, children: [
-        /* @__PURE__ */ jsx2(IconReset, {}),
-        t.reset
+        /* @__PURE__ */ jsx2(IconBack, {}),
+        t.back
       ] }),
       state === "running" ? /* @__PURE__ */ jsxs2("button", { className: `${btnPrimary} flex-1`, onClick: handlePause, children: [
         /* @__PURE__ */ jsx2(IconPause, {}),
@@ -593,8 +670,10 @@ function IntervalTimer({
   ] });
 }
 export {
+  DEFAULT_LABELS,
   IntervalTimer,
   Stepper,
   computePhase,
+  defaultBeep,
   useHoldRepeat
 };

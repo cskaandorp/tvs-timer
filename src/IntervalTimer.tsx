@@ -3,6 +3,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { computePhase, type Phase } from "./computePhase";
 import { Stepper } from "./Stepper";
+import { defaultBeep } from "./audio";
+import { DEFAULT_LABELS } from "./types";
 import type { TimerConfig, TimerPreset, TimerLabels, TimerCallbacks } from "./types";
 
 type TimerState = "idle" | "countdown" | "running" | "paused" | "done";
@@ -24,19 +26,19 @@ function formatMMSS(seconds: number) {
 // Inline SVG icons to avoid lucide-react dependency
 const IconPlay = () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21" /></svg>;
 const IconPause = () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>;
-const IconReset = () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 4v6h6" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /></svg>;
+const IconBack = () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></svg>;
 const IconBookmark = () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>;
 const IconTrash = () => <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>;
 
 export interface IntervalTimerProps extends TimerCallbacks {
   config?: TimerConfig;
-  labels: TimerLabels;
+  labels?: Partial<TimerLabels>;
   userId?: string;
 }
 
 export function IntervalTimer({
   config,
-  labels: t,
+  labels: labelOverrides,
   userId,
   onBeep,
   onClose,
@@ -47,6 +49,9 @@ export function IntervalTimer({
   onScheduleNotifications,
   onCancelNotifications,
 }: IntervalTimerProps) {
+  const t: TimerLabels = { ...DEFAULT_LABELS, ...labelOverrides };
+  const beep = onBeep ?? defaultBeep;
+
   const [work, setWork] = useState(config?.work ?? 7);
   const [rest, setRest] = useState(config?.rest ?? 3);
   const [rounds, setRounds] = useState(config?.rounds ?? 6);
@@ -56,9 +61,7 @@ export function IntervalTimer({
 
   const [presets, setPresets] = useState<TimerPreset[]>([]);
   const [savingPreset, setSavingPreset] = useState(false);
-  const [showSaveInput, setShowSaveInput] = useState(false);
   const [presetName, setPresetName] = useState("");
-  const saveInputRef = useRef<HTMLInputElement>(null);
 
   const fetchPresets = useCallback(async () => {
     if (!onFetchPresets) return;
@@ -75,11 +78,16 @@ export function IntervalTimer({
     if (!name || !onSavePreset) return;
     setSavingPreset(true);
     try {
-      const ok = await onSavePreset(name, { work, rest, rounds, sets, pause: pauseDuration, countdown: countdownDuration });
+      const config = { work, rest, rounds, sets, pause: pauseDuration, countdown: countdownDuration };
+      const ok = await onSavePreset(name, config);
       if (ok) {
-        setShowSaveInput(false);
         setPresetName("");
-        fetchPresets();
+        if (onSaveConfig) {
+          onSaveConfig(config);
+        } else {
+          fetchPresets();
+          start();
+        }
       }
     } catch { /* ignore */ }
     setSavingPreset(false);
@@ -143,15 +151,17 @@ export function IntervalTimer({
       setTotalProgress(1);
       setCurrentRound(rounds);
       setCurrentSet(sets);
-      onBeep?.("done");
+      beep("done");
       return;
     }
 
     const phaseKey = `${result.set}-${result.round}-${result.phase}`;
     if (lastPhaseRef.current && lastPhaseRef.current !== phaseKey) {
-      onBeep?.(result.phase === "work" ? "work" : "rest");
+      beep(result.phase === "work" ? "work" : "rest");
       setInnerTransition(false);
-      setTimeout(() => setInnerTransition(true), 0);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setInnerTransition(true));
+      });
     }
     lastPhaseRef.current = phaseKey;
 
@@ -161,7 +171,7 @@ export function IntervalTimer({
     setDisplayTime(Math.ceil(result.remaining / 1000));
     setProgress(result.progress);
     setTotalProgress(result.totalProgress);
-  }, [workMs, restMs, rounds, pauseMs, sets, onBeep]);
+  }, [workMs, restMs, rounds, pauseMs, sets, beep]);
 
   const startRunning = useCallback(() => {
     startedAtRef.current = Date.now();
@@ -174,7 +184,7 @@ export function IntervalTimer({
     setCurrentSet(1);
     setProgress(0);
     setTotalProgress(0);
-    onBeep?.("work");
+    beep("work");
     onScheduleNotifications?.(getNotifSchedule(), 0);
     intervalRef.current = setInterval(tick, 50);
   }, [tick, work, onBeep, onScheduleNotifications, getNotifSchedule]);
@@ -188,14 +198,14 @@ export function IntervalTimer({
     setPhase("work");
     setProgress(0);
     setTotalProgress(0);
-    onBeep?.("work");
+    beep("work");
 
     let count = countdownDuration;
     countdownRef.current = setInterval(() => {
       count -= 1;
       if (count > 0) {
         setCountdownValue(count);
-        onBeep?.(count === 1 ? "go" : "work");
+        beep(count === 1 ? "go" : "work");
       } else {
         clearInterval(countdownRef.current);
         startRunning();
@@ -281,7 +291,7 @@ export function IntervalTimer({
     const coachPresets = presets.filter((p) => p.owner_id !== userId);
 
     return (
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3">
         {presets.length > 0 && (
           <div className="space-y-2 max-h-40 overflow-y-auto">
             {myPresets.length > 0 && (
@@ -330,7 +340,7 @@ export function IntervalTimer({
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-4 mb-2">
           <Stepper label={t.work} value={work} onChange={setWork} min={1} max={600} step={1} unit="s" />
           <Stepper label={t.rest} value={rest} onChange={setRest} min={0} max={600} step={1} unit="s" />
           <Stepper label={t.rounds} value={rounds} onChange={setRounds} min={1} max={99} step={1} unit="" />
@@ -341,39 +351,38 @@ export function IntervalTimer({
           <Stepper label={t.countdown} value={countdownDuration} onChange={setCountdownDuration} min={3} max={60} step={1} unit="s" />
         </div>
 
-        {showSaveInput && onSavePreset && (
+        {onSavePreset && (
           <div className="flex gap-2">
             <input
-              ref={saveInputRef}
               type="text"
               className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
               placeholder={t.presetName}
               value={presetName}
               onChange={(e) => setPresetName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") savePreset(); }}
+              onKeyDown={(e) => { if (e.key === "Enter" && presetName.trim()) savePreset(); }}
             />
-            <button className={btnPrimary} disabled={!presetName.trim() || savingPreset} onClick={savePreset}>
+            <button className={btnOutline} disabled={!presetName.trim() || savingPreset} onClick={savePreset}>
+              <IconBookmark />
               {savingPreset ? "..." : t.savePreset}
             </button>
           </div>
         )}
 
-        <div className="flex gap-2">
-          {onSavePreset && (
-            <button
-              className={btnIcon}
-              onClick={() => {
-                setShowSaveInput((v) => !v);
-                if (!showSaveInput) setTimeout(() => saveInputRef.current?.focus(), 0);
-              }}
-            >
-              <IconBookmark />
-            </button>
-          )}
+        <div className="flex items-center gap-2">
           {onSaveConfig ? (
-            <button className={`${btnPrimary} flex-1`} onClick={() => onSaveConfig({ work, rest, rounds, sets, pause: pauseDuration, countdown: countdownDuration })}>
-              {t.done}
-            </button>
+            <>
+              <button
+                type="button"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                onClick={start}
+              >
+                {t.tryTimer}
+              </button>
+              <div className="flex-1" />
+              <button className={btnPrimary} onClick={() => onSaveConfig({ work, rest, rounds, sets, pause: pauseDuration, countdown: countdownDuration })}>
+                {t.done}
+              </button>
+            </>
           ) : (
             <button className={`${btnPrimary} flex-1`} onClick={start}>
               <IconPlay />
@@ -388,9 +397,9 @@ export function IntervalTimer({
   // Countdown mode
   if (state === "countdown") {
     return (
-      <div className="flex flex-col items-center gap-5">
+      <div className="flex flex-col items-center gap-8">
         <div className="relative flex items-center justify-center" style={{ width: RING_SIZE, height: RING_SIZE }}>
-          <svg width={RING_SIZE} height={RING_SIZE} className="-rotate-90">
+          <svg width={RING_SIZE} height={RING_SIZE} style={{ transform: "rotate(-90deg)" }}>
             <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={OUTER_RADIUS} fill="none" stroke={COLOR_OVERALL} strokeWidth={OUTER_STROKE} opacity={0.15} />
             <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={INNER_RADIUS} fill="none" stroke={COLOR_ACTIVE} strokeWidth={INNER_STROKE} opacity={0.15} />
           </svg>
@@ -403,8 +412,8 @@ export function IntervalTimer({
         </div>
         <div className="flex gap-3 w-full">
           <button className={`${btnOutline} flex-1`} onClick={reset}>
-            <IconReset />
-            {t.reset}
+            <IconBack />
+            {t.back}
           </button>
         </div>
       </div>
@@ -414,9 +423,9 @@ export function IntervalTimer({
   // Done mode
   if (state === "done") {
     return (
-      <div className="flex flex-col items-center gap-6">
+      <div className="flex flex-col items-center gap-8">
         <div className="relative flex items-center justify-center" style={{ width: RING_SIZE, height: RING_SIZE }}>
-          <svg width={RING_SIZE} height={RING_SIZE} className="-rotate-90">
+          <svg width={RING_SIZE} height={RING_SIZE} style={{ transform: "rotate(-90deg)" }}>
             <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={OUTER_RADIUS} fill="none" stroke={COLOR_OVERALL} strokeWidth={OUTER_STROKE} />
             <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={INNER_RADIUS} fill="none" stroke={COLOR_OVERALL} strokeWidth={INNER_STROKE} />
           </svg>
@@ -424,8 +433,8 @@ export function IntervalTimer({
         </div>
         <div className="flex gap-3 w-full">
           <button className={`${btnOutline} flex-1`} onClick={reset}>
-            <IconReset />
-            {t.reset}
+            <IconBack />
+            {t.back}
           </button>
           <button className={`${btnOutline} flex-1`} onClick={start}>
             <IconPlay />
@@ -441,9 +450,9 @@ export function IntervalTimer({
 
   // Running / Paused mode
   return (
-    <div className="flex flex-col items-center gap-5">
+    <div className="flex flex-col items-center gap-8">
       <div className="relative flex items-center justify-center" style={{ width: RING_SIZE, height: RING_SIZE }}>
-        <svg width={RING_SIZE} height={RING_SIZE} className="-rotate-90">
+        <svg width={RING_SIZE} height={RING_SIZE} style={{ transform: "rotate(-90deg)" }}>
           <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={OUTER_RADIUS} fill="none" stroke={COLOR_OVERALL} strokeWidth={OUTER_STROKE} opacity={0.15} />
           <circle
             cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={OUTER_RADIUS} fill="none"
@@ -473,8 +482,8 @@ export function IntervalTimer({
 
       <div className="flex gap-3 w-full">
         <button className={`${btnOutline} flex-1`} onClick={reset}>
-          <IconReset />
-          {t.reset}
+          <IconBack />
+          {t.back}
         </button>
         {state === "running" ? (
           <button className={`${btnPrimary} flex-1`} onClick={handlePause}>

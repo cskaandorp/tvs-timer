@@ -36,7 +36,6 @@ interface TimerLabels {
     start: string;
     pauseTimer: string;
     resume: string;
-    reset: string;
     done: string;
     redo: string;
     close: string;
@@ -48,7 +47,10 @@ interface TimerLabels {
     presetSaved: string;
     presetDeleted: string;
     countdown: string;
+    tryTimer: string;
+    back: string;
 }
+declare const DEFAULT_LABELS: TimerLabels;
 interface TimerCallbacks {
     onBeep?: (type: BeepType) => void;
     onClose: () => void;
@@ -73,10 +75,10 @@ interface NotificationSchedule {
 
 interface IntervalTimerProps extends TimerCallbacks {
     config?: TimerConfig;
-    labels: TimerLabels;
+    labels?: Partial<TimerLabels>;
     userId?: string;
 }
-declare function IntervalTimer({ config, labels: t, userId, onBeep, onClose, onFetchPresets, onSaveConfig, onSavePreset, onDeletePreset, onScheduleNotifications, onCancelNotifications, }: IntervalTimerProps): react_jsx_runtime.JSX.Element;
+declare function IntervalTimer({ config, labels: labelOverrides, userId, onBeep, onClose, onFetchPresets, onSaveConfig, onSavePreset, onDeletePreset, onScheduleNotifications, onCancelNotifications, }: IntervalTimerProps): react_jsx_runtime.JSX.Element;
 
 interface StepperProps {
     label: string;
@@ -114,4 +116,6 @@ declare function useHoldRepeat(callback: () => void, deps: React.DependencyList)
     stop: () => void;
 };
 
-export { type BeepType, IntervalTimer, type IntervalTimerProps, type NotificationSchedule, type Phase, type PhaseResult, Stepper, type TimerCallbacks, type TimerConfig, type TimerLabels, type TimerPreset, computePhase, useHoldRepeat };
+declare function defaultBeep(type: string): void;
+
+export { type BeepType, DEFAULT_LABELS, IntervalTimer, type IntervalTimerProps, type NotificationSchedule, type Phase, type PhaseResult, Stepper, type TimerCallbacks, type TimerConfig, type TimerLabels, type TimerPreset, computePhase, defaultBeep, useHoldRepeat };
