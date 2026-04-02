@@ -54,6 +54,7 @@ export interface TimerLabels {
 export interface TimerCallbacks {
   onBeep?: (type: BeepType) => void;
   onClose: () => void;
+  onSaveConfig?: (config: TimerConfig) => void;
   onFetchPresets?: () => Promise<TimerPreset[]>;
   onSavePreset?: (name: string, config: TimerPreset["config"]) => Promise<boolean>;
   onDeletePreset?: (id: string) => Promise<boolean>;

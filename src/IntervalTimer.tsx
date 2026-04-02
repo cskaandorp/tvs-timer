@@ -41,6 +41,7 @@ export function IntervalTimer({
   onBeep,
   onClose,
   onFetchPresets,
+  onSaveConfig,
   onSavePreset,
   onDeletePreset,
   onScheduleNotifications,
@@ -369,10 +370,16 @@ export function IntervalTimer({
               <IconBookmark />
             </button>
           )}
-          <button className={`${btnPrimary} flex-1`} onClick={start}>
-            <IconPlay />
-            {t.start}
-          </button>
+          {onSaveConfig ? (
+            <button className={`${btnPrimary} flex-1`} onClick={() => onSaveConfig({ work, rest, rounds, sets, pause: pauseDuration, countdown: countdownDuration })}>
+              {t.done}
+            </button>
+          ) : (
+            <button className={`${btnPrimary} flex-1`} onClick={start}>
+              <IconPlay />
+              {t.start}
+            </button>
+          )}
         </div>
       </div>
     );
