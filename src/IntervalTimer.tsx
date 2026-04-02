@@ -51,6 +51,7 @@ export function IntervalTimer({
   const [rounds, setRounds] = useState(config?.rounds ?? 6);
   const [sets, setSets] = useState(config?.sets ?? 1);
   const [pauseDuration, setPauseDuration] = useState(config?.pause ?? 180);
+  const [countdownDuration, setCountdownDuration] = useState(config?.countdown ?? 5);
 
   const [presets, setPresets] = useState<TimerPreset[]>([]);
   const [savingPreset, setSavingPreset] = useState(false);
@@ -73,7 +74,7 @@ export function IntervalTimer({
     if (!name || !onSavePreset) return;
     setSavingPreset(true);
     try {
-      const ok = await onSavePreset(name, { work, rest, rounds, sets, pause: pauseDuration });
+      const ok = await onSavePreset(name, { work, rest, rounds, sets, pause: pauseDuration, countdown: countdownDuration });
       if (ok) {
         setShowSaveInput(false);
         setPresetName("");
@@ -97,6 +98,7 @@ export function IntervalTimer({
     setRounds(preset.config.rounds);
     setSets(preset.config.sets);
     setPauseDuration(preset.config.pause);
+    setCountdownDuration(preset.config.countdown ?? 5);
   };
 
   const [state, setState] = useState<TimerState>("idle");
@@ -107,7 +109,7 @@ export function IntervalTimer({
   const [progress, setProgress] = useState(0);
   const [totalProgress, setTotalProgress] = useState(0);
   const [innerTransition, setInnerTransition] = useState(true);
-  const [countdownValue, setCountdownValue] = useState(5);
+  const [countdownValue, setCountdownValue] = useState(countdownDuration);
 
   const startedAtRef = useRef(0);
   const pausedElapsedRef = useRef(0);
@@ -180,14 +182,14 @@ export function IntervalTimer({
     clearInterval(intervalRef.current);
     clearInterval(countdownRef.current);
 
-    setCountdownValue(5);
+    setCountdownValue(countdownDuration);
     setState("countdown");
     setPhase("work");
     setProgress(0);
     setTotalProgress(0);
     onBeep?.("work");
 
-    let count = 5;
+    let count = countdownDuration;
     countdownRef.current = setInterval(() => {
       count -= 1;
       if (count > 0) {
@@ -198,7 +200,7 @@ export function IntervalTimer({
         startRunning();
       }
     }, 1000);
-  }, [startRunning, onBeep]);
+  }, [startRunning, onBeep, countdownDuration]);
 
   const handlePause = useCallback(() => {
     clearInterval(intervalRef.current);
@@ -335,6 +337,7 @@ export function IntervalTimer({
           {sets > 1 && (
             <Stepper label={t.pause} value={pauseDuration} onChange={setPauseDuration} min={0} max={1800} step={15} unit="" formatValue={formatMMSS} />
           )}
+          <Stepper label={t.countdown} value={countdownDuration} onChange={setCountdownDuration} min={3} max={60} step={1} unit="s" />
         </div>
 
         {showSaveInput && onSavePreset && (

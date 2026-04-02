@@ -4,6 +4,7 @@ export interface TimerConfig {
   rounds: number;
   sets?: number;
   pause?: number;
+  countdown?: number;
 }
 
 export interface TimerPreset {
@@ -17,6 +18,7 @@ export interface TimerPreset {
     rounds: number;
     sets: number;
     pause: number;
+    countdown: number;
   };
   created_at: string;
 }
