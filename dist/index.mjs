@@ -533,7 +533,7 @@ function IntervalTimer({
           "input",
           {
             type: "text",
-            className: "flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring",
+            className: "flex-1 min-w-0 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring",
             placeholder: t.presetName,
             value: presetName,
             onChange: (e) => setPresetName(e.target.value),
@@ -542,7 +542,7 @@ function IntervalTimer({
             }
           }
         ),
-        /* @__PURE__ */ jsxs2("button", { className: btnOutline, disabled: !presetName.trim() || savingPreset, onClick: savePreset, children: [
+        /* @__PURE__ */ jsxs2("button", { className: `${btnOutline} shrink-0 whitespace-nowrap`, disabled: !presetName.trim() || savingPreset, onClick: savePreset, children: [
           /* @__PURE__ */ jsx2(IconBookmark, {}),
           savingPreset ? "..." : t.savePreset
         ] })
