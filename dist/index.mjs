@@ -100,7 +100,7 @@ function Stepper({ label, value, onChange, min, max, step, unit, formatValue }) 
   };
   return /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
     /* @__PURE__ */ jsx("span", { className: "text-sm font-medium", children: label }),
-    /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+    /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
       /* @__PURE__ */ jsx(
         "button",
         {
@@ -118,7 +118,7 @@ function Stepper({ label, value, onChange, min, max, step, unit, formatValue }) 
           ref: inputRef,
           type: "number",
           inputMode: "numeric",
-          className: "w-16 text-center tabular-nums font-semibold bg-transparent border-b border-primary outline-none",
+          className: "w-12 text-center tabular-nums font-semibold bg-transparent border-b border-primary outline-none",
           value: editValue,
           onChange: (e) => setEditValue(e.target.value),
           onBlur: commitEdit,
@@ -130,7 +130,7 @@ function Stepper({ label, value, onChange, min, max, step, unit, formatValue }) 
         "button",
         {
           type: "button",
-          className: "w-16 text-center tabular-nums font-semibold",
+          className: "w-12 text-center tabular-nums font-semibold",
           onClick: startEdit,
           children: formatValue ? formatValue(value) : `${value}${unit}`
         }
@@ -210,7 +210,7 @@ var DEFAULT_LABELS = {
   done: "Done",
   redo: "Redo",
   close: "Close",
-  savePreset: "Save preset",
+  savePreset: "Save",
   presetName: "Preset name",
   myPresets: "My presets",
   coachPresets: "Coach presets",
@@ -475,7 +475,7 @@ function IntervalTimer({
   if (state === "idle") {
     const myPresets = presets.filter((p) => p.owner_id === userId);
     const coachPresets = presets.filter((p) => p.owner_id !== userId);
-    return /* @__PURE__ */ jsxs2("div", { className: "flex flex-col gap-3 w-full overflow-hidden", children: [
+    return /* @__PURE__ */ jsxs2("div", { className: "flex flex-col gap-3", children: [
       presets.length > 0 && /* @__PURE__ */ jsxs2("div", { className: "space-y-2 max-h-40 overflow-y-auto", children: [
         myPresets.length > 0 && /* @__PURE__ */ jsxs2("div", { children: [
           /* @__PURE__ */ jsx2("p", { className: "text-xs font-medium text-muted-foreground mb-1", children: t.myPresets }),

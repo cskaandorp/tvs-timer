@@ -67,7 +67,7 @@ export const DEFAULT_LABELS: TimerLabels = {
   done: "Done",
   redo: "Redo",
   close: "Close",
-  savePreset: "Save preset",
+  savePreset: "Save",
   presetName: "Preset name",
   myPresets: "My presets",
   coachPresets: "Coach presets",
