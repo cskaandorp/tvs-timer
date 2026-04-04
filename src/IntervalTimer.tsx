@@ -355,6 +355,7 @@ export function IntervalTimer({
           <div className="flex gap-2 min-w-0">
             <input
               type="text"
+              size={1}
               className="flex-1 min-w-0 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
               placeholder={t.presetName}
               value={presetName}
