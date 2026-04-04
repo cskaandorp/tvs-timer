@@ -528,12 +528,12 @@ function IntervalTimer({
         sets > 1 && /* @__PURE__ */ jsx2(Stepper, { label: t.pause, value: pauseDuration, onChange: setPauseDuration, min: 0, max: 1800, step: 15, unit: "", formatValue: formatMMSS }),
         /* @__PURE__ */ jsx2(Stepper, { label: t.countdown, value: countdownDuration, onChange: setCountdownDuration, min: 3, max: 60, step: 1, unit: "s" })
       ] }),
-      onSavePreset && /* @__PURE__ */ jsxs2("div", { className: "flex gap-2", children: [
+      onSavePreset && /* @__PURE__ */ jsxs2("div", { className: "flex gap-2 min-w-0", children: [
         /* @__PURE__ */ jsx2(
           "input",
           {
             type: "text",
-            className: "flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring",
+            className: "flex-1 min-w-0 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring",
             placeholder: t.presetName,
             value: presetName,
             onChange: (e) => setPresetName(e.target.value),
