@@ -291,7 +291,7 @@ export function IntervalTimer({
     const coachPresets = presets.filter((p) => p.owner_id !== userId);
 
     return (
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 w-full overflow-hidden">
         {presets.length > 0 && (
           <div className="space-y-2 max-h-40 overflow-y-auto">
             {myPresets.length > 0 && (

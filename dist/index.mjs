@@ -475,7 +475,7 @@ function IntervalTimer({
   if (state === "idle") {
     const myPresets = presets.filter((p) => p.owner_id === userId);
     const coachPresets = presets.filter((p) => p.owner_id !== userId);
-    return /* @__PURE__ */ jsxs2("div", { className: "flex flex-col gap-3", children: [
+    return /* @__PURE__ */ jsxs2("div", { className: "flex flex-col gap-3 w-full overflow-hidden", children: [
       presets.length > 0 && /* @__PURE__ */ jsxs2("div", { className: "space-y-2 max-h-40 overflow-y-auto", children: [
         myPresets.length > 0 && /* @__PURE__ */ jsxs2("div", { children: [
           /* @__PURE__ */ jsx2("p", { className: "text-xs font-medium text-muted-foreground mb-1", children: t.myPresets }),
