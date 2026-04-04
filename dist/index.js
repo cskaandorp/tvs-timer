@@ -130,7 +130,7 @@ function Stepper({ label, value, onChange, min, max, step, unit, formatValue }) 
   };
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center justify-between", children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-sm font-medium", children: label }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-2", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-center gap-3", children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
         "button",
         {
@@ -148,7 +148,7 @@ function Stepper({ label, value, onChange, min, max, step, unit, formatValue }) 
           ref: inputRef,
           type: "number",
           inputMode: "numeric",
-          className: "w-12 text-center tabular-nums font-semibold bg-transparent border-b border-primary outline-none",
+          className: "w-16 text-center tabular-nums font-semibold bg-transparent border-b border-primary outline-none",
           value: editValue,
           onChange: (e) => setEditValue(e.target.value),
           onBlur: commitEdit,
@@ -160,7 +160,7 @@ function Stepper({ label, value, onChange, min, max, step, unit, formatValue }) 
         "button",
         {
           type: "button",
-          className: "w-12 text-center tabular-nums font-semibold",
+          className: "w-16 text-center tabular-nums font-semibold",
           onClick: startEdit,
           children: formatValue ? formatValue(value) : `${value}${unit}`
         }
@@ -505,7 +505,7 @@ function IntervalTimer({
   if (state === "idle") {
     const myPresets = presets.filter((p) => p.owner_id === userId);
     const coachPresets = presets.filter((p) => p.owner_id !== userId);
-    return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "flex flex-col gap-3", children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "flex flex-col gap-3 min-w-0", children: [
       presets.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "space-y-2 max-h-40 overflow-y-auto", children: [
         myPresets.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "text-xs font-medium text-muted-foreground mb-1", children: t.myPresets }),
@@ -563,7 +563,7 @@ function IntervalTimer({
           "input",
           {
             type: "text",
-            className: "flex-1 min-w-0 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring",
+            className: "flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring",
             placeholder: t.presetName,
             value: presetName,
             onChange: (e) => setPresetName(e.target.value),
@@ -572,7 +572,7 @@ function IntervalTimer({
             }
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: `${btnOutline} shrink-0 whitespace-nowrap`, disabled: !presetName.trim() || savingPreset, onClick: savePreset, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: btnOutline, disabled: !presetName.trim() || savingPreset, onClick: savePreset, children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(IconBookmark, {}),
           savingPreset ? "..." : t.savePreset
         ] })

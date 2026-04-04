@@ -45,7 +45,7 @@ export function Stepper({ label, value, onChange, min, max, step, unit, formatVa
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm font-medium">{label}</span>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <button
           type="button"
           className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground active:bg-muted select-none"
@@ -60,7 +60,7 @@ export function Stepper({ label, value, onChange, min, max, step, unit, formatVa
             ref={inputRef}
             type="number"
             inputMode="numeric"
-            className="w-12 text-center tabular-nums font-semibold bg-transparent border-b border-primary outline-none"
+            className="w-16 text-center tabular-nums font-semibold bg-transparent border-b border-primary outline-none"
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onBlur={commitEdit}
@@ -69,7 +69,7 @@ export function Stepper({ label, value, onChange, min, max, step, unit, formatVa
         ) : (
           <button
             type="button"
-            className="w-12 text-center tabular-nums font-semibold"
+            className="w-16 text-center tabular-nums font-semibold"
             onClick={startEdit}
           >
             {formatValue ? formatValue(value) : `${value}${unit}`}
