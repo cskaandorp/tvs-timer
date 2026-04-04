@@ -31,7 +31,7 @@ content: [
 
 ### Minimal (all defaults)
 
-All props except `onClose` are optional. English labels and Web Audio beeps are built in.
+All props except `onClose` are optional. English labels and Web Audio beeps are built in!
 
 ```tsx
 import { IntervalTimer } from "@teevs/timer";
