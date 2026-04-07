@@ -216,6 +216,9 @@ function defaultBeep(type) {
     case "go":
       playBeep(1760, 300);
       break;
+    case "warn":
+      playBeep(660, 100);
+      break;
     case "done":
       playBeep(880, 150);
       setTimeout(() => playBeep(880, 150), 200);
@@ -366,6 +369,7 @@ function IntervalTimer({
   const intervalRef = (0, import_react3.useRef)(0);
   const countdownRef = (0, import_react3.useRef)(0);
   const lastPhaseRef = (0, import_react3.useRef)("");
+  const lastWarnSecRef = (0, import_react3.useRef)(0);
   const workMs = work * 1e3;
   const restMs = rest * 1e3;
   const pauseMs = pauseDuration * 1e3;
@@ -398,12 +402,22 @@ function IntervalTimer({
     const phaseKey = `${result.set}-${result.round}-${result.phase}`;
     if (lastPhaseRef.current && lastPhaseRef.current !== phaseKey) {
       beep(result.phase === "work" ? "work" : "rest");
+      lastWarnSecRef.current = 0;
       setInnerTransition(false);
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setInnerTransition(true));
       });
     }
     lastPhaseRef.current = phaseKey;
+    const secRemaining = Math.ceil(result.remaining / 1e3);
+    if (result.phaseDuration >= 7e3 && secRemaining >= 1 && secRemaining <= 3) {
+      if (lastWarnSecRef.current !== secRemaining) {
+        lastWarnSecRef.current = secRemaining;
+        beep("warn");
+      }
+    } else {
+      lastWarnSecRef.current = 0;
+    }
     setPhase(result.phase);
     setCurrentRound(result.round);
     setCurrentSet(result.set);
@@ -415,6 +429,7 @@ function IntervalTimer({
     startedAtRef.current = Date.now();
     pausedElapsedRef.current = 0;
     lastPhaseRef.current = "";
+    lastWarnSecRef.current = 0;
     setState("running");
     setDisplayTime(work);
     setPhase("work");
@@ -563,6 +578,7 @@ function IntervalTimer({
           "input",
           {
             type: "text",
+            size: 1,
             className: "flex-1 min-w-0 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring",
             placeholder: t.presetName,
             value: presetName,

@@ -23,7 +23,7 @@ interface TimerPreset {
     };
     created_at: string;
 }
-type BeepType = "work" | "rest" | "go" | "done";
+type BeepType = "work" | "rest" | "go" | "done" | "warn";
 interface TimerLabels {
     work: string;
     rest: string;
