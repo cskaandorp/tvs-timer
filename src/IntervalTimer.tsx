@@ -167,9 +167,11 @@ export function IntervalTimer({
     }
     lastPhaseRef.current = phaseKey;
 
-    // Warning beeps for the last 3 seconds of a phase (only if phase >= 5s)
+    // Warning beeps near end of phase: last 3 seconds (or every second if phase ≤ 3s)
+    const phaseSec = Math.round(result.phaseDuration / 1000);
+    const warnCount = Math.min(3, Math.max(0, phaseSec - 1));
     const secRemaining = Math.ceil(result.remaining / 1000);
-    if (result.phaseDuration >= 7000 && secRemaining >= 1 && secRemaining <= 3) {
+    if (warnCount > 0 && secRemaining >= 1 && secRemaining <= warnCount) {
       if (lastWarnSecRef.current !== secRemaining) {
         lastWarnSecRef.current = secRemaining;
         beep("warn");

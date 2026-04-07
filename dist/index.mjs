@@ -379,8 +379,10 @@ function IntervalTimer({
       });
     }
     lastPhaseRef.current = phaseKey;
+    const phaseSec = Math.round(result.phaseDuration / 1e3);
+    const warnCount = Math.min(3, Math.max(0, phaseSec - 1));
     const secRemaining = Math.ceil(result.remaining / 1e3);
-    if (result.phaseDuration >= 7e3 && secRemaining >= 1 && secRemaining <= 3) {
+    if (warnCount > 0 && secRemaining >= 1 && secRemaining <= warnCount) {
       if (lastWarnSecRef.current !== secRemaining) {
         lastWarnSecRef.current = secRemaining;
         beep("warn");
