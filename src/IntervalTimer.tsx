@@ -125,6 +125,7 @@ export function IntervalTimer({
   const intervalRef = useRef<ReturnType<typeof setInterval>>(0 as unknown as ReturnType<typeof setInterval>);
   const countdownRef = useRef<ReturnType<typeof setInterval>>(0 as unknown as ReturnType<typeof setInterval>);
   const lastPhaseRef = useRef<string>("");
+  const lastWarnSecRef = useRef<number>(0);
 
   const workMs = work * 1000;
   const restMs = rest * 1000;
@@ -158,12 +159,24 @@ export function IntervalTimer({
     const phaseKey = `${result.set}-${result.round}-${result.phase}`;
     if (lastPhaseRef.current && lastPhaseRef.current !== phaseKey) {
       beep(result.phase === "work" ? "work" : "rest");
+      lastWarnSecRef.current = 0;
       setInnerTransition(false);
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setInnerTransition(true));
       });
     }
     lastPhaseRef.current = phaseKey;
+
+    // Warning beeps for the last 3 seconds of a phase (only if phase >= 5s)
+    const secRemaining = Math.ceil(result.remaining / 1000);
+    if (result.phaseDuration >= 7000 && secRemaining >= 1 && secRemaining <= 3) {
+      if (lastWarnSecRef.current !== secRemaining) {
+        lastWarnSecRef.current = secRemaining;
+        beep("warn");
+      }
+    } else {
+      lastWarnSecRef.current = 0;
+    }
 
     setPhase(result.phase);
     setCurrentRound(result.round);
@@ -177,6 +190,7 @@ export function IntervalTimer({
     startedAtRef.current = Date.now();
     pausedElapsedRef.current = 0;
     lastPhaseRef.current = "";
+    lastWarnSecRef.current = 0;
     setState("running");
     setDisplayTime(work);
     setPhase("work");

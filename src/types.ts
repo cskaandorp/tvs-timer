@@ -23,7 +23,7 @@ export interface TimerPreset {
   created_at: string;
 }
 
-export type BeepType = "work" | "rest" | "go" | "done";
+export type BeepType = "work" | "rest" | "go" | "done" | "warn";
 
 export interface TimerLabels {
   work: string;

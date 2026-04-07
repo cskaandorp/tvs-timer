@@ -28,6 +28,7 @@ export function defaultBeep(type: string): void {
     case "work": playBeep(880, 200); break;
     case "rest": playBeep(440, 300); break;
     case "go": playBeep(1760, 300); break;
+    case "warn": playBeep(660, 100); break;
     case "done":
       playBeep(880, 150);
       setTimeout(() => playBeep(880, 150), 200);
